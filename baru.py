@@ -249,7 +249,7 @@ class DatabaseManager:
         try:
             ddl_string = ddl_string.strip()
             if ddl_string: # Pastikan string tidak kosong
-                # Tandai sebagai DDL agar execute_query menanganinya dengan tepat
+                 # Tandai sebagai DDL agar execute_query menanganinya dengan tepat
                 self.execute_query(ddl_string, is_ddl=True)
         except mysql.connector.Error as e:
             # Daftar error number yang umum untuk objek yang sudah ada
@@ -336,12 +336,12 @@ class DatabaseManager:
             INSERT INTO Log_Perubahan_Kegiatan (ID_Kegiatan_Ref, Aksi, Detail_Baru)
             VALUES (NEW.ID_Kegiatan, 'INSERT',
                     CONCAT('ID: ', NEW.ID_Kegiatan,
-                            ', Nama: ', NEW.Nama_Kegiatan,
-                            ', Tanggal: ', NEW.Tanggal,
-                            ', Tempat: ', NEW.Tempat,
-                            ', Jenis: ', NEW.Jenis_Kegiatan,
-                            ', PJ_ID: ', IFNULL(NEW.ID_Penanggung_Jawab, 'NULL'))
-                    );
+                           ', Nama: ', NEW.Nama_Kegiatan,
+                           ', Tanggal: ', NEW.Tanggal,
+                           ', Tempat: ', NEW.Tempat,
+                           ', Jenis: ', NEW.Jenis_Kegiatan,
+                           ', PJ_ID: ', IFNULL(NEW.ID_Penanggung_Jawab, 'NULL'))
+                   );
         END
         """
         self._execute_ddl_block(trigger_insert_ddl)
@@ -371,12 +371,12 @@ class DatabaseManager:
             INSERT INTO Log_Perubahan_Kegiatan (ID_Kegiatan_Ref, Aksi, Detail_Lama)
             VALUES (OLD.ID_Kegiatan, 'DELETE',
                     CONCAT('ID: ', OLD.ID_Kegiatan,
-                            ', Nama: ', OLD.Nama_Kegiatan,
-                            ', Tanggal: ', OLD.Tanggal,
-                            ', Tempat: ', OLD.Tempat,
-                            ', Jenis: ', OLD.Jenis_Kegiatan,
-                            ', PJ_ID: ', IFNULL(OLD.ID_Penanggung_Jawab, 'NULL'))
-                    );
+                           ', Nama: ', OLD.Nama_Kegiatan,
+                           ', Tanggal: ', OLD.Tanggal,
+                           ', Tempat: ', OLD.Tempat,
+                           ', Jenis: ', OLD.Jenis_Kegiatan,
+                           ', PJ_ID: ', IFNULL(OLD.ID_Penanggung_Jawab, 'NULL'))
+                   );
         END
         """
         self._execute_ddl_block(trigger_delete_ddl)
@@ -459,8 +459,8 @@ class DatabaseManager:
                     # Memanggil Stored Procedure untuk menambah kegiatan, bukan INSERT langsung
                     self.call_stored_procedure("SP_TambahKegiatan",
                                                 (keg.id_entitas, keg.nama_kegiatan,
-                                                keg.tanggal, keg.tempat,
-                                                keg.jenis_kegiatan, keg.id_penanggung_jawab))
+                                                 keg.tanggal, keg.tempat,
+                                                 keg.jenis_kegiatan, keg.id_penanggung_jawab))
             
             conn.commit() # Commit setelah semua data awal dimasukkan
             print("Data awal berhasil diinisialisasi jika diperlukan.")
@@ -473,13 +473,13 @@ class DatabaseManager:
 
     # ... (metode lain seperti tambah_kegiatan_obj_db, dll. tetap sama)
     # ... (pastikan semua pemanggilan ke execute_query dari metode lain sudah sesuai,
-    #       misalnya tidak menggunakan is_ddl_multi lagi jika tidak perlu)
+    #      misalnya tidak menggunakan is_ddl_multi lagi jika tidak perlu)
 
     def tambah_kegiatan_obj_db(self, kegiatan_obj: 'Kegiatan'): # Tambahkan type hint jika Kegiatan belum didefinisikan
         """Menambah kegiatan ke DB menggunakan objek Kegiatan via Stored Procedure."""
         try:
             self.call_stored_procedure("SP_TambahKegiatan",
-                                    (kegiatan_obj.id_entitas, kegiatan_obj.nama_kegiatan,
+                                   (kegiatan_obj.id_entitas, kegiatan_obj.nama_kegiatan,
                                     kegiatan_obj.tanggal, kegiatan_obj.tempat,
                                     kegiatan_obj.jenis_kegiatan, kegiatan_obj.id_penanggung_jawab))
         except mysql.connector.Error as e:
@@ -492,35 +492,21 @@ class DatabaseManager:
     def update_kegiatan_obj_db(self, kegiatan_obj: 'Kegiatan'):
         """Mengupdate kegiatan di DB menggunakan objek Kegiatan via Stored Procedure."""
         return self.call_stored_procedure("SP_UpdateKegiatan",
-                                    (kegiatan_obj.id_entitas, kegiatan_obj.nama_kegiatan,
+                                   (kegiatan_obj.id_entitas, kegiatan_obj.nama_kegiatan,
                                     kegiatan_obj.tanggal, kegiatan_obj.tempat,
                                     kegiatan_obj.jenis_kegiatan, kegiatan_obj.id_penanggung_jawab))
 
     def hapus_kegiatan_db(self, id_keg: str):
         return self.call_stored_procedure("SP_HapusKegiatan", (id_keg,))
 
-    def get_semua_kegiatan_obj_db(self, search_term=None): # Tambahkan parameter search_term
+    def get_semua_kegiatan_obj_db(self):
         query = """
             SELECT ID_Kegiatan, Nama_Kegiatan, Tanggal, Tempat, Jenis_Kegiatan,
                    ID_Penanggung_Jawab, Nama_Penanggung_Jawab 
             FROM View_Detail_Kegiatan
+            ORDER BY STR_TO_DATE(Tanggal, '%d-%m-%Y') DESC, Nama_Kegiatan ASC
         """
-        params = []
-        if search_term:
-            query += """
-                WHERE Nama_Kegiatan LIKE %s 
-                OR ID_Kegiatan LIKE %s 
-                OR Tempat LIKE %s 
-                OR Jenis_Kegiatan LIKE %s
-                OR Nama_Penanggung_Jawab LIKE %s
-            """
-            # Menggunakan %% untuk wildcard SQL dengan parameter
-            like_term = f"%{search_term}%"
-            params = [like_term, like_term, like_term, like_term, like_term]
-        
-        query += " ORDER BY STR_TO_DATE(Tanggal, '%d-%m-%Y') DESC, Nama_Kegiatan ASC"
-
-        rows = self.execute_query(query, params=params, fetch_all=True)
+        rows = self.execute_query(query, fetch_all=True)
         kegiatan_list = []
         if rows:
             for row in rows:
@@ -573,7 +559,7 @@ class DatabaseManager:
             VALUES (%s, %s, %s, %s, %s, %s)
         """
         self.execute_query(query, (pengguna_obj.id_entitas, pengguna_obj.nama, pengguna_obj.role_id,
-                                    pengguna_obj.nim_nip, pengguna_obj.username, pengguna_obj._password))
+                                   pengguna_obj.nim_nip, pengguna_obj.username, pengguna_obj._password))
 
 
     def get_activity_log_db(self):
@@ -750,7 +736,7 @@ class SignupDialog(BaseDialog):
             if entry_attr_name == "_password_entry":
                 self._password_entry_ref = entry # Simpan ref khusus untuk bind
             elif entry_attr_name == "_confirm_password_entry":
-                self._confirm_password_entry_ref = entry # Simpan ref khusus untuk bind
+                 self._confirm_password_entry_ref = entry # Simpan ref khusus untuk bind
 
 
         ttk.Label(form_frame, text="Role:", style="Signup.TLabel").grid(row=row_idx, column=0, sticky="w", pady=5)
@@ -761,7 +747,7 @@ class SignupDialog(BaseDialog):
         
         # Binding Return key
         if hasattr(self, '_confirm_password_entry_ref'):
-                self._confirm_password_entry_ref.bind("<Return>", self._attempt_signup)
+             self._confirm_password_entry_ref.bind("<Return>", self._attempt_signup)
 
 
         button_frame = ttk.Frame(form_frame, style="TFrame") # Pastikan TFrame ada
@@ -921,7 +907,7 @@ class KegiatanApp:
         
         self.root.title("🗂️ Aplikasi Manajemen Kegiatan DTEI (VTS)")
         self.root.configure(bg=BG_COLOR)
-        self.root.geometry("1050x850") # Ukuran awal, bisa disesuaikan lagi
+        self.root.geometry("1050x850")
 
         self._setup_styles()
         
@@ -929,72 +915,36 @@ class KegiatanApp:
         self.pengguna_id_to_display_map = {} # Map: id_pengguna -> display_name
 
         self._build_ui()
-        self._update_status_bar(f"Selamat datang! Siap digunakan.")
-
 
     def _setup_styles(self):
         style = ttk.Style()
-        style.theme_use('clam') # Anda bisa mencoba 'alt', 'default', 'classic'
+        style.theme_use('clam')
         style.configure("Treeview.Heading", font=FONT_BOLD)
         style.configure("Treeview", font=FONT_STYLE, rowheight=25)
-        style.map("Treeview", background=[('selected', BTN_HOVER)], foreground=[('selected', 'white')])
         style.configure("TLabel", background=BG_COLOR, font=FONT_STYLE)
         style.configure("TEntry", font=FONT_STYLE)
         style.configure("TCombobox", font=FONT_STYLE)
         style.map("TCombobox", fieldbackground=[("readonly", "white")])
-        style.configure("TButton", font=FONT_STYLE, padding=5) # FONT_STYLE bisa diganti FONT_BOLD jika ingin teks tombol bold
-        style.map("TButton",
-                  foreground=[('!active', 'black'), ('active', 'black')], # Warna teks normal dan saat aktif
-                  background=[('!active', BTN_COLOR), ('active', BTN_HOVER)], # Warna background normal dan saat hover/klik
-                  relief=[('pressed', 'sunken'), ('!pressed', 'raised')])
+        style.configure("TButton", font=FONT_STYLE, padding=5)
         style.configure("TLabelframe.Label", font=FONT_BOLD, background=BG_COLOR)
-        style.configure("Status.TLabel", background="#e0e0e0", font=(FONT_STYLE[0], 9), padding=2) # Style untuk status bar
-        style.configure("Header.TLabel", background=BG_COLOR, font=("Segoe UI", 16, "bold"), padding=10) # Style untuk header
 
-
-    def _styled_button(self, parent, text, command, style_name="TButton", icon_path=None): # Menambah parameter icon_path
-        # Logika untuk menambahkan icon jika ada path dan file ada (disederhanakan)
-        # Jika menggunakan icon, mungkin perlu mengatur compound='left' atau 'top'
-        # Untuk sekarang, kita fokus pada teks saja seperti sebelumnya
-        # try:
-        #     if icon_path:
-        #         img = Image.open(icon_path)
-        #         # Resize jika perlu, contoh: img = img.resize((16, 16), Image.LANCZOS)
-        #         photo_img = ImageTk.PhotoImage(img)
-        #         btn = ttk.Button(parent, text=text, command=command, style=style_name, image=photo_img, compound=tk.LEFT)
-        #         btn.image = photo_img # Simpan referensi agar tidak di garbage collect
-        #         return btn
-        # except Exception as e:
-        #     print(f"Gagal memuat icon {icon_path}: {e}")
-        #     pass # Fallback ke tombol tanpa icon
+    def _styled_button(self, parent, text, command, style_name="TButton"):
         btn = ttk.Button(parent, text=text, command=command, style=style_name)
         return btn
 
     def _build_ui(self):
-        # Header Aplikasi
-        header_label = ttk.Label(self.root, text="Aplikasi Manajemen Kegiatan", style="Header.TLabel")
-        header_label.pack(fill='x', pady=(5,0))
-
-        # Frame utama untuk konten (input dan tabel)
-        main_content_frame = ttk.Frame(self.root, style="TFrame") # Pastikan TFrame didefinisikan atau gunakan tk.Frame
-        main_content_frame.pack(expand=True, fill='both', padx=5, pady=5)
-
-        self._create_input_frame(main_content_frame) # Pass main_content_frame sebagai parent
-        self._create_action_buttons(main_content_frame) # Pass main_content_frame sebagai parent
-        self._create_table_and_search_frame(main_content_frame) # Pass main_content_frame sebagai parent
-
-        self._create_status_bar() # Buat status bar di root
+        self._create_input_frame()
+        self._create_action_buttons()
+        self._create_table_frame()
 
         self._load_pengguna_ui() # Memuat data pengguna untuk combobox
         self._tampilkan_semua_kegiatan_ui() # Menampilkan data kegiatan awal
 
-    def _create_input_frame(self, parent_frame): # Menerima parent_frame
-        input_outer_frame = ttk.LabelFrame(parent_frame, text="📝 Formulir Kegiatan")
-        input_outer_frame.pack(fill='x', padx=10, pady=(5,10)) # pady disesuaikan
-        
-        form_fields_frame = ttk.Frame(input_outer_frame, style="TFrame")
-        form_fields_frame.pack(padx=15, pady=15, fill='x')
-
+    def _create_input_frame(self):
+        input_frame = ttk.LabelFrame(self.root, text="Formulir Kegiatan")
+        input_frame.pack(fill='x', padx=15, pady=10)
+        form_fields_frame = ttk.Frame(input_frame) # style="TFrame"
+        form_fields_frame.pack(padx=10, pady=10)
 
         self.labels_texts_map = {
             "id_kegiatan": "ID Kegiatan:", "nama_kegiatan": "Nama Kegiatan:",
@@ -1003,222 +953,133 @@ class KegiatanApp:
         }
         self.entries = {}
         self.tempat_options = ["Aula B11", "Auditorium B12", "Labkom1-B11", "Kelas1", "Kelas2",
-                                "Kelas3", "Kelas4", "Kelas5", "Kelas6", "Kelas7", "Kelas8",
-                                "Kelas9", "Kelas10", "Ruang Rapat A", "Ruang Dosen", "Online/Zoom", "Luar Kampus"]
-        self.jenis_kegiatan_options = ["Seminar", "Workshop", "Kuliah Umum", "Praktikum", "Rapat", "Pelatihan", "Lomba", "Pengabdian Masyarakat", "Lainnya"]
+                               "Kelas3", "Kelas4", "Kelas5", "Kelas6", "Kelas7", "Kelas8",
+                               "Kelas9", "Kelas10", "Ruang Rapat A", "Ruang Dosen"]
 
-
-        # Layout Grid di dalam form_fields_frame
-        # Kolom 0 untuk Label, Kolom 1 untuk Widget Input, Kolom 2 untuk Kalender/Tombol
-        form_fields_frame.columnconfigure(1, weight=1) # Widget input bisa expand
+        tanggal_idx = list(self.labels_texts_map.keys()).index("tanggal")
         
-        row_idx = 0
+        col_idx_label = 0
+        col_idx_widget = 1
+        # Layout Grid
+        current_row_idx = 0
 
         # ID Kegiatan
-        ttk.Label(form_fields_frame, text=self.labels_texts_map["id_kegiatan"]).grid(row=row_idx, column=0, sticky="w", padx=5, pady=5)
-        self.entries["id_kegiatan"] = ttk.Entry(form_fields_frame, font=FONT_STYLE, width=35) # Lebar disesuaikan
-        self.entries["id_kegiatan"].grid(row=row_idx, column=1, sticky="ew", padx=5, pady=5)
-        row_idx += 1
+        ttk.Label(form_fields_frame, text=self.labels_texts_map["id_kegiatan"]).grid(row=current_row_idx, column=col_idx_label, sticky="w", padx=5, pady=5)
+        self.entries["id_kegiatan"] = ttk.Entry(form_fields_frame, font=FONT_STYLE, width=40)
+        self.entries["id_kegiatan"].grid(row=current_row_idx, column=col_idx_widget, sticky="ew", padx=5, pady=5)
+        current_row_idx += 1
 
         # Nama Kegiatan
-        ttk.Label(form_fields_frame, text=self.labels_texts_map["nama_kegiatan"]).grid(row=row_idx, column=0, sticky="w", padx=5, pady=5)
-        self.entries["nama_kegiatan"] = ttk.Entry(form_fields_frame, font=FONT_STYLE, width=35)
-        self.entries["nama_kegiatan"].grid(row=row_idx, column=1, sticky="ew", padx=5, pady=5)
-        row_idx += 1
+        ttk.Label(form_fields_frame, text=self.labels_texts_map["nama_kegiatan"]).grid(row=current_row_idx, column=col_idx_label, sticky="w", padx=5, pady=5)
+        self.entries["nama_kegiatan"] = ttk.Entry(form_fields_frame, font=FONT_STYLE, width=40)
+        self.entries["nama_kegiatan"].grid(row=current_row_idx, column=col_idx_widget, sticky="ew", padx=5, pady=5)
+        current_row_idx += 1
         
         # Tanggal (Kalender)
-        ttk.Label(form_fields_frame, text=self.labels_texts_map["tanggal"]).grid(row=row_idx, column=0, sticky="nw", padx=5, pady=(5,0))
-        self.cal_tanggal_frame = ttk.Frame(form_fields_frame) # Frame untuk kalender
-        self.cal_tanggal_frame.grid(row=row_idx, column=1, sticky="ew", padx=5, pady=0, rowspan=3)
-        
-        self.cal_tanggal = Calendar(self.cal_tanggal_frame, selectmode='day', date_pattern='dd-mm-yyyy',
-                                    font=(FONT_STYLE[0], 9), showweeknumbers=False, locale='id_ID',
+        ttk.Label(form_fields_frame, text=self.labels_texts_map["tanggal"]).grid(row=current_row_idx, column=col_idx_label, sticky="nw", padx=5, pady=5) # sticky nw
+        self.cal_tanggal = Calendar(form_fields_frame, selectmode='day', date_pattern='dd-mm-yyyy',
+                                    font=FONT_STYLE, showweeknumbers=False, locale='id_ID',
                                     background=BTN_COLOR, foreground='white', bordercolor=BTN_COLOR,
                                     headersbackground=BTN_COLOR, headersforeground='white',
                                     selectbackground=BTN_HOVER, selectforeground='white',
                                     normalbackground='white', normalforeground='black',
                                     weekendbackground='white', weekendforeground='black',
                                     othermonthbackground='lightgray', othermonthforeground='darkgray',
-                                    othermonthwebackground='lightgray', othermonthweforeground='darkgray',
-                                    tooltipfont=(FONT_STYLE[0],8) # Tooltip font
-                                    )
-        self.cal_tanggal.pack(fill="both", expand=True) # Kalender mengisi frame-nya
+                                    othermonthwebackground='lightgray', othermonthweforeground='darkgray')
+        self.cal_tanggal.grid(row=current_row_idx, column=col_idx_widget, sticky="ew", padx=5, pady=5, rowspan=3)
         self.entries["tanggal"] = self.cal_tanggal
-        row_idx += 3 # Kalender efektif memakan beberapa baris grid
+        # self.cal_tanggal.bind("<<CalendarSelected>>", self._on_calendar_selected_debug) # Jika perlu debug
+        current_row_idx += 3 # Kalender memakan 3 baris efektif
 
-        # Tempat (Combobox dengan opsi edit)
-        ttk.Label(form_fields_frame, text=self.labels_texts_map["tempat"]).grid(row=row_idx, column=0, sticky="w", padx=5, pady=5)
-        self.combo_tempat = ttk.Combobox(form_fields_frame, values=self.tempat_options, state="normal", width=32, font=FONT_STYLE) # state normal agar bisa diedit
-        self.combo_tempat.grid(row=row_idx, column=1, sticky="ew", padx=5, pady=5)
+        # Tempat (Combobox)
+        ttk.Label(form_fields_frame, text=self.labels_texts_map["tempat"]).grid(row=current_row_idx, column=col_idx_label, sticky="w", padx=5, pady=5)
+        self.combo_tempat = ttk.Combobox(form_fields_frame, values=self.tempat_options, state="readonly", width=37, font=FONT_STYLE)
+        self.combo_tempat.grid(row=current_row_idx, column=col_idx_widget, sticky="ew", padx=5, pady=5)
         self.entries["tempat"] = self.combo_tempat
-        row_idx += 1
+        current_row_idx += 1
 
-        # Jenis Kegiatan (Combobox dengan opsi edit)
-        ttk.Label(form_fields_frame, text=self.labels_texts_map["jenis_kegiatan"]).grid(row=row_idx, column=0, sticky="w", padx=5, pady=5)
-        self.combo_jenis_kegiatan = ttk.Combobox(form_fields_frame, values=self.jenis_kegiatan_options, state="normal", width=32, font=FONT_STYLE)
-        self.combo_jenis_kegiatan.grid(row=row_idx, column=1, sticky="ew", padx=5, pady=5)
-        self.entries["jenis_kegiatan"] = self.combo_jenis_kegiatan # Ganti entry dengan combobox
-        row_idx += 1
+        # Jenis Kegiatan
+        ttk.Label(form_fields_frame, text=self.labels_texts_map["jenis_kegiatan"]).grid(row=current_row_idx, column=col_idx_label, sticky="w", padx=5, pady=5)
+        self.entries["jenis_kegiatan"] = ttk.Entry(form_fields_frame, font=FONT_STYLE, width=40)
+        self.entries["jenis_kegiatan"].grid(row=current_row_idx, column=col_idx_widget, sticky="ew", padx=5, pady=5)
+        current_row_idx += 1
 
         # Penanggung Jawab (Combobox)
-        ttk.Label(form_fields_frame, text=self.labels_texts_map["pj"]).grid(row=row_idx, column=0, sticky="w", padx=5, pady=5)
-        self.combo_pj = ttk.Combobox(form_fields_frame, state="readonly", width=32, font=FONT_STYLE)
-        self.combo_pj.grid(row=row_idx, column=1, sticky="ew", padx=5, pady=5)
+        ttk.Label(form_fields_frame, text=self.labels_texts_map["pj"]).grid(row=current_row_idx, column=col_idx_label, sticky="w", padx=5, pady=5)
+        self.combo_pj = ttk.Combobox(form_fields_frame, state="readonly", width=37, font=FONT_STYLE)
+        self.combo_pj.grid(row=current_row_idx, column=col_idx_widget, sticky="ew", padx=5, pady=5)
         self.entries["pj"] = self.combo_pj
+        current_row_idx += 1
+
+        form_fields_frame.columnconfigure(col_idx_widget, weight=1) # Agar widget input bisa expand
 
 
-    def _create_action_buttons(self, parent_frame): # Menerima parent_frame
-        action_buttons_frame = ttk.Frame(parent_frame, style="TFrame")
-        action_buttons_frame.pack(fill='x', padx=10, pady=(0, 10)) # pady disesuaikan
+    def _create_action_buttons(self):
+        # Frame untuk tombol diletakkan di dalam input_frame agar ikut ter-pack dengan baik
+        input_frame_children = self.root.winfo_children()
+        # Cari input_frame (biasanya yang terakhir dari jenis LabelFrame)
+        target_input_frame = None
+        for child in reversed(input_frame_children):
+            if isinstance(child, ttk.LabelFrame) and child.cget("text") == "Formulir Kegiatan":
+                target_input_frame = child
+                break
         
-        # Frame internal untuk centering tombol
-        button_center_frame = ttk.Frame(action_buttons_frame, style="TFrame")
-        button_center_frame.pack() # Default pack akan center jika tidak ada fill/expand di parent
+        if not target_input_frame:
+            # Fallback jika tidak ditemukan, buat di root (kurang ideal secara layout)
+            target_input_frame = self.root 
+            print("Peringatan: Frame input_frame tidak ditemukan, tombol diletakkan di root.")
 
+        action_buttons_frame = ttk.Frame(target_input_frame) # style="TFrame"
+        action_buttons_frame.pack(pady=20)
 
-        self.btn_simpan = self._styled_button(button_center_frame, "➕ Tambah", self._tambah_kegiatan)
-        self.btn_simpan.pack(side=tk.LEFT, padx=5, pady=5)
+        self.btn_simpan = self._styled_button(action_buttons_frame, "➕ Tambah", self._tambah_kegiatan)
+        self.btn_simpan.pack(side=tk.LEFT, padx=5)
 
-        self.btn_update = self._styled_button(button_center_frame, "✏️ Update", self._update_kegiatan)
-        self.btn_update.pack(side=tk.LEFT, padx=5, pady=5)
+        self.btn_update = self._styled_button(action_buttons_frame, "✏️ Update", self._update_kegiatan)
+        self.btn_update.pack(side=tk.LEFT, padx=5)
         self.btn_update.config(state="disabled")
 
-        self.btn_hapus = self._styled_button(button_center_frame, "❌ Hapus", self._hapus_kegiatan)
-        self.btn_hapus.pack(side=tk.LEFT, padx=5, pady=5)
+        self.btn_hapus = self._styled_button(action_buttons_frame, "❌ Hapus", self._hapus_kegiatan)
+        self.btn_hapus.pack(side=tk.LEFT, padx=5)
 
-        self.btn_clear_form = self._styled_button(button_center_frame, "🧹 Bersihkan", self._clear_form_action) # Teks dipersingkat
-        self.btn_clear_form.pack(side=tk.LEFT, padx=5, pady=5)
+        self.btn_clear_form = self._styled_button(action_buttons_frame, "🧹 Bersihkan Form", self._clear_form_action)
+        self.btn_clear_form.pack(side=tk.LEFT, padx=5)
 
-        # Tombol refresh dan log bisa diletakkan di frame terpisah jika diinginkan
-        # atau tetap di sini
-        self.btn_refresh_data = self._styled_button(button_center_frame, "🔄 Muat Ulang", self._tampilkan_semua_kegiatan_ui)
-        self.btn_refresh_data.pack(side=tk.LEFT, padx=5, pady=5)
+        self.btn_refresh_data = self._styled_button(action_buttons_frame, "🔄 Muat Ulang Data", self._tampilkan_semua_kegiatan_ui)
+        self.btn_refresh_data.pack(side=tk.LEFT, padx=5)
 
-        self.btn_activity_log = self._styled_button(button_center_frame, "📜 Riwayat", self._open_activity_log_dialog) # Teks dipersingkat
-        self.btn_activity_log.pack(side=tk.LEFT, padx=5, pady=5)
-
-    def _create_table_and_search_frame(self, parent_frame): # Menerima parent_frame
-        table_outer_frame = ttk.LabelFrame(parent_frame, text="📋 Daftar Kegiatan (dari View)")
-        table_outer_frame.pack(fill='both', expand=True, padx=10, pady=(0,5)) # pady disesuaikan
-
-        # Frame untuk Search Bar
-        search_frame = ttk.Frame(table_outer_frame, style="TFrame")
-        search_frame.pack(fill='x', padx=5, pady=5)
-
-        ttk.Label(search_frame, text="🔎 Cari:", font=FONT_BOLD).pack(side=tk.LEFT, padx=(0,5))
-        self.search_var = tk.StringVar()
-        self.search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=40, font=FONT_STYLE)
-        self.search_entry.pack(side=tk.LEFT, fill='x', expand=True, padx=5)
-        self.search_entry.bind("<KeyRelease>", self._on_search_key_release) # Event saat tombol dilepas
-
-        search_button = self._styled_button(search_frame, "Cari", self._perform_search)
-        search_button.pack(side=tk.LEFT, padx=5)
-        
-        clear_search_button = self._styled_button(search_frame, "X", self._clear_search) # Tombol kecil untuk clear
-        clear_search_button.pack(side=tk.LEFT, padx=(0,5))
+        self.btn_activity_log = self._styled_button(action_buttons_frame, "📜 Riwayat Aktivitas", self._open_activity_log_dialog)
+        self.btn_activity_log.pack(side=tk.LEFT, padx=5)
 
 
-        # Frame untuk Treeview dan Scrollbar
-        tree_frame = ttk.Frame(table_outer_frame, style="TFrame")
-        tree_frame.pack(fill='both', expand=True, padx=5, pady=(0,5))
-
+    def _create_table_frame(self):
+        tabel_frame = ttk.LabelFrame(self.root, text="📋 Daftar Kegiatan (dari View)")
+        tabel_frame.pack(fill='both', expand=True, padx=15, pady=10)
 
         columns_info = {
-            "id": {"text": "ID Keg.", "width": 70, "anchor": "w"},
-            "nama": {"text": "Nama Kegiatan", "width": 230, "anchor": "w"},
-            "tanggal": {"text": "Tanggal", "width": 90, "anchor": "center"},
-            "tempat": {"text": "Tempat", "width": 160, "anchor": "w"},
-            "jenis": {"text": "Jenis Keg.", "width": 110, "anchor": "w"},
-            "pj_nama": {"text": "P. Jawab", "width": 130, "anchor": "w"},
+            "id": {"text": "ID Keg.", "width": 80, "anchor": "w"},
+            "nama": {"text": "Nama Kegiatan", "width": 250, "anchor": "w"},
+            "tanggal": {"text": "Tanggal", "width": 100, "anchor": "center"},
+            "tempat": {"text": "Tempat", "width": 180, "anchor": "w"},
+            "jenis": {"text": "Jenis Keg.", "width": 120, "anchor": "w"},
+            "pj_nama": {"text": "P. Jawab", "width": 150, "anchor": "w"},
             "pj_id": {"text": "ID PJ", "width": 0, "anchor": "w"} # Kolom tersembunyi
         }
-        self.tree = ttk.Treeview(tree_frame, columns=list(columns_info.keys()), show="headings")
+        self.tree = ttk.Treeview(tabel_frame, columns=list(columns_info.keys()), show="headings")
 
         for col_id, info in columns_info.items():
-            self.tree.heading(col_id, text=info["text"], command=lambda _col=col_id: self._treeview_sort_column(_col, False)) # Tambah command sort
+            self.tree.heading(col_id, text=info["text"])
             self.tree.column(col_id, anchor=info["anchor"], width=info["width"],
-                             minwidth=info["width"] if info["width"] > 40 else 40, # minwidth disesuaikan
+                             minwidth=info["width"] if info["width"] > 50 else 50,
                              stretch=tk.NO if info["width"] == 0 else tk.YES)
 
 
         self.tree.pack(side="left", fill="both", expand=True)
         self.tree.bind("<<TreeviewSelect>>", self._on_tree_select)
 
-        scrollbar_y = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscroll=scrollbar_y.set)
-        scrollbar_y.pack(side=tk.RIGHT, fill="y")
-
-        scrollbar_x = ttk.Scrollbar(table_outer_frame, orient="horizontal", command=self.tree.xview) # Di luar tree_frame
-        self.tree.configure(xscroll=scrollbar_x.set)
-        scrollbar_x.pack(side=tk.BOTTOM, fill="x", padx=5, pady=(0,5))
-
-
-    def _create_status_bar(self):
-        self.status_var = tk.StringVar()
-        self.status_bar = ttk.Label(self.root, textvariable=self.status_var, style="Status.TLabel", anchor='w')
-        self.status_bar.pack(side=tk.BOTTOM, fill='x', padx=0, pady=0)
-        self._update_status_bar("Status: Siap.")
-
-
-    def _update_status_bar(self, message):
-        self.status_var.set(message)
-        # Anda bisa menambahkan timestamp jika mau:
-        # now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # self.status_var.set(f"[{now}] {message}")
-
-    def _on_search_key_release(self, event=None):
-        """Dipanggil setiap kali tombol keyboard dilepas di entry pencarian."""
-        # Bisa dibuat delay agar tidak search setiap ketikan, tapi untuk sekarang langsung saja
-        self._perform_search()
-
-    def _perform_search(self, event=None):
-        search_term = self.search_var.get().strip()
-        self._tampilkan_semua_kegiatan_ui(search_term=search_term)
-        if search_term:
-            self._update_status_bar(f"Menampilkan hasil pencarian untuk: '{search_term}'.")
-        else:
-            self._update_status_bar("Menampilkan semua kegiatan.")
-            
-    def _clear_search(self, event=None):
-        self.search_var.set("")
-        self._perform_search() # Muat ulang semua data
-        self.search_entry.focus_set() # Kembalikan fokus ke search entry
-
-
-    def _treeview_sort_column(self, col, reverse):
-        """Mengurutkan data di treeview berdasarkan kolom yang diklik."""
-        try:
-            data_list = [(self.tree.set(k, col), k) for k in self.tree.get_children('')]
-            
-            # Coba konversi ke tipe data yang sesuai untuk sorting
-            # Ini adalah pendekatan sederhana, mungkin perlu penyesuaian lebih lanjut
-            # untuk tanggal atau angka.
-            def convert(value):
-                if col == "tanggal": # Asumsi format DD-MM-YYYY
-                    try:
-                        return datetime.datetime.strptime(value, "%d-%m-%Y")
-                    except (ValueError, TypeError):
-                        return datetime.datetime.min # Fallback untuk tanggal salah/kosong
-                # Anda bisa menambahkan konversi untuk kolom numerik jika ada
-                # if col == "id_kegiatan_numerik":
-                # try: return int(value)
-                # except ValueError: return 0
-                return str(value).lower() # Default ke string case-insensitive
-
-            data_list.sort(key=lambda t: convert(t[0]), reverse=reverse)
-
-            for index, (val, k) in enumerate(data_list):
-                self.tree.move(k, '', index)
-
-            # Toggle arah sorting untuk klik berikutnya
-            self.tree.heading(col, command=lambda _col=col: self._treeview_sort_column(_col, not reverse))
-            sort_indicator = "🔽" if reverse else "🔼"
-            self._update_status_bar(f"Data diurutkan berdasarkan '{self.tree.heading(col)['text']}' ({'Descending' if reverse else 'Ascending'}).")
-
-        except Exception as e:
-            print(f"Error sorting treeview: {e}")
-            messagebox.showerror("Sort Error", f"Gagal mengurutkan data: {e}", parent=self.root)
-
+        scrollbar = ttk.Scrollbar(tabel_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill="y")
 
     def _clear_form_fields(self):
         self.entries["id_kegiatan"].config(state="normal")
@@ -1226,12 +1087,9 @@ class KegiatanApp:
         self.entries["nama_kegiatan"].delete(0, tk.END)
         self.cal_tanggal.selection_set(datetime.date.today()) # Reset tanggal ke hari ini
         self.combo_tempat.set('')
-        self.combo_jenis_kegiatan.set('') # Menggunakan combo_jenis_kegiatan
+        self.entries["jenis_kegiatan"].delete(0, tk.END)
         self.combo_pj.set('')
         self.selected_kegiatan_obj_for_update = None # Reset objek yang dipilih
-        self.entries["id_kegiatan"].focus_set() # Fokus ke ID Kegiatan
-        self._update_status_bar("Formulir dibersihkan.")
-
 
     def _clear_form_action(self):
         self._clear_form_fields()
@@ -1240,43 +1098,37 @@ class KegiatanApp:
         self.btn_update.config(state="disabled")
         if self.tree.selection():
             self.tree.selection_remove(self.tree.selection()[0])
-        self._update_status_bar("Formulir dibersihkan, siap untuk input baru.")
-
 
     def _on_tree_select(self, event=None):
         selected_items = self.tree.selection()
         if not selected_items:
-            # self._clear_form_action() # Jangan clear form jika hanya deselect
-            self.btn_simpan.config(state="normal") # Aktifkan tombol simpan
-            self.btn_update.config(state="disabled") # Nonaktifkan update
-            self.entries["id_kegiatan"].config(state="normal")
+            self._clear_form_action()
             return
 
-        item_id_tree = selected_items[0] # ID internal treeview, bukan ID kegiatan
-        item_values = self.tree.item(item_id_tree, "values")
+        item_id = selected_items[0] # ID internal treeview, bukan ID kegiatan
+        item_values = self.tree.item(item_id, "values")
 
         if not item_values or len(item_values) < 7:
             print("Error: Data item tidak lengkap dari treeview.")
             self._clear_form_action()
-            self._update_status_bar("Error: Data item terpilih tidak lengkap.")
             return
 
-        self._clear_form_fields() # Bersihkan form sebelum mengisi dengan data baru
+        self._clear_form_fields()
 
         id_keg_val, nama_keg_val, tgl_val, tempat_val, jenis_val, _, pj_id_val_hidden = item_values
         
         # Cari objek Kegiatan yang sesuai dari data yang sudah dimuat
         # Ini asumsi bahwa ID kegiatan (id_keg_val) unik dan ada di self.kegiatan_data_cache
         # Jika tidak ada cache, Anda perlu query lagi ke DB atau simpan objek saat memuat tree
-        self.selected_kegiatan_obj_for_update = Kegiatan(id_keg_val, nama_keg_val, tgl_val, tempat_val, jenis_val, int(pj_id_val_hidden) if pj_id_val_hidden and pj_id_val_hidden != 'None' and pj_id_val_hidden.strip() != "" else None)
+        self.selected_kegiatan_obj_for_update = Kegiatan(id_keg_val, nama_keg_val, tgl_val, tempat_val, jenis_val, int(pj_id_val_hidden) if pj_id_val_hidden and pj_id_val_hidden != 'None' else None)
 
 
         self.entries["id_kegiatan"].insert(0, id_keg_val)
-        self.entries["id_kegiatan"].config(state="readonly") # ID tidak bisa diubah saat update
+        self.entries["id_kegiatan"].config(state="readonly")
         self.entries["nama_kegiatan"].insert(0, nama_keg_val)
 
         try:
-            if tgl_val and tgl_val.strip():
+            if tgl_val:
                 date_obj = datetime.datetime.strptime(tgl_val, "%d-%m-%Y").date()
                 self.cal_tanggal.selection_set(date_obj)
             else: # Jika tgl_val kosong atau None
@@ -1285,9 +1137,12 @@ class KegiatanApp:
             print(f"Format tanggal salah dari tree: {tgl_val}")
             self.cal_tanggal.selection_set(datetime.date.today()) # Default ke hari ini
 
-        self.combo_tempat.set(tempat_val) # Langsung set, jika tidak ada di list akan tetap tampil
+        if tempat_val in self.tempat_options:
+            self.combo_tempat.set(tempat_val)
+        else:
+            self.combo_tempat.set('') # Kosongkan jika tidak ada di opsi
 
-        self.combo_jenis_kegiatan.set(jenis_val) # Menggunakan combo_jenis_kegiatan
+        self.entries["jenis_kegiatan"].insert(0, jenis_val)
 
         if pj_id_val_hidden and pj_id_val_hidden != 'None' and pj_id_val_hidden.strip():
             try:
@@ -1305,8 +1160,6 @@ class KegiatanApp:
 
         self.btn_simpan.config(state="disabled")
         self.btn_update.config(state="normal")
-        self._update_status_bar(f"Kegiatan '{nama_keg_val}' (ID: {id_keg_val}) dipilih untuk diupdate.")
-
 
     def _load_pengguna_ui(self):
         try:
@@ -1315,18 +1168,12 @@ class KegiatanApp:
                 self.pengguna_obj_map = {p_obj.get_display_name(): p_obj for p_obj in pengguna_list_obj}
                 self.pengguna_id_to_display_map = {p_obj.id_entitas: p_obj.get_display_name() for p_obj in pengguna_list_obj}
                 self.combo_pj["values"] = list(self.pengguna_obj_map.keys())
-                if self.combo_pj["values"]: # Pilih PJ default jika ada (misalnya user yang login)
-                    if self.current_user and self.current_user.get_display_name() in self.pengguna_obj_map:
-                        self.combo_pj.set(self.current_user.get_display_name())
-                    # else: self.combo_pj.current(0) # Atau pilih yang pertama
             else:
                 self.combo_pj["values"] = []
                 self.pengguna_obj_map = {}
                 self.pengguna_id_to_display_map = {}
-            self._update_status_bar("Data penanggung jawab dimuat.")
         except mysql.connector.Error as err:
             messagebox.showerror("Error Database", f"Gagal memuat data pengguna: {err}", parent=self.root)
-            self._update_status_bar(f"Error memuat pengguna: {err}")
 
 
     def _get_form_data_as_kegiatan_object(self, for_update=False):
@@ -1334,10 +1181,6 @@ class KegiatanApp:
         id_keg = self.entries["id_kegiatan"].get().strip()
         if for_update and self.selected_kegiatan_obj_for_update:
             id_keg = self.selected_kegiatan_obj_for_update.id_entitas # Gunakan ID dari objek yang dipilih untuk update
-        elif not for_update and not id_keg: # Cek ID kosong khusus untuk tambah
-            messagebox.showwarning("⚠️ Validasi Gagal", "ID Kegiatan harus diisi.", parent=self.root)
-            self.entries["id_kegiatan"].focus_set()
-            return None
 
         nama = self.entries["nama_kegiatan"].get().strip()
         
@@ -1346,11 +1189,11 @@ class KegiatanApp:
         if isinstance(tanggal_obj_from_cal, datetime.date):
             tanggal_str = tanggal_obj_from_cal.strftime("%d-%m-%Y")
         elif isinstance(tanggal_obj_from_cal, str) and tanggal_obj_from_cal: # Jika get_date() mengembalikan string
-            try:
-                parsed_date = datetime.datetime.strptime(tanggal_obj_from_cal, self.cal_tanggalcget('date_pattern')).date() # Gunakan date_pattern dari kalender
+             try:
+                parsed_date = datetime.datetime.strptime(tanggal_obj_from_cal, "%d-%m-%Y").date()
                 tanggal_str = parsed_date.strftime("%d-%m-%Y")
-            except ValueError:
-                messagebox.showerror("Error Tanggal", f"Format tanggal dari kalender ('{tanggal_obj_from_cal}') tidak valid. Harusnya dd-mm-yyyy.", parent=self.root)
+             except ValueError:
+                messagebox.showerror("Error Tanggal", f"Format tanggal dari kalender ('{tanggal_obj_from_cal}') tidak valid.", parent=self.root)
                 return None # Indikasi error
         else: # tanggal_obj_from_cal adalah None atau tipe tidak dikenal
             messagebox.showwarning("Validasi Gagal", "Tanggal harus dipilih.", parent=self.root)
@@ -1358,32 +1201,16 @@ class KegiatanApp:
 
 
         tempat = self.combo_tempat.get().strip()
-        jenis = self.combo_jenis_kegiatan.get().strip() # Menggunakan combo_jenis_kegiatan
+        jenis = self.entries["jenis_kegiatan"].get().strip()
         pj_display_name = self.combo_pj.get()
 
-        # Validasi field yang tidak boleh kosong
-        required_fields = {
-            "ID Kegiatan": id_keg if not for_update else True, # ID hanya wajib untuk tambah baru
-            "Nama Kegiatan": nama,
-            "Tanggal": tanggal_str,
-            "Tempat": tempat,
-            "Jenis Kegiatan": jenis,
-            "Penanggung Jawab": pj_display_name
-        }
-        for field_name, field_value in required_fields.items():
-            if not field_value:
-                messagebox.showwarning("⚠️ Validasi Gagal", f"{field_name} harus diisi.", parent=self.root)
-                # Fokus ke field yang kosong (perlu mapping field_name ke widget)
-                if field_name == "ID Kegiatan": self.entries["id_kegiatan"].focus_set()
-                elif field_name == "Nama Kegiatan": self.entries["nama_kegiatan"].focus_set()
-                # dst. untuk field lain jika perlu
-                return None
-
+        if not all([id_keg, nama, tanggal_str, tempat, jenis, pj_display_name]):
+            messagebox.showwarning("⚠️ Validasi Gagal", "Semua kolom formulir harus diisi.", parent=self.root)
+            return None
 
         selected_pengguna_obj = self.pengguna_obj_map.get(pj_display_name)
         if not selected_pengguna_obj:
-            messagebox.showerror("Error Internal", "Penanggung jawab tidak valid atau belum dipilih.", parent=self.root)
-            self.combo_pj.focus_set()
+            messagebox.showerror("Error Internal", "Penanggung jawab tidak valid.", parent=self.root)
             return None
         id_pj = selected_pengguna_obj.id_entitas
 
@@ -1393,7 +1220,6 @@ class KegiatanApp:
     def _tambah_kegiatan(self):
         kegiatan_baru = self._get_form_data_as_kegiatan_object()
         if not kegiatan_baru:
-            self._update_status_bar("Gagal menambah kegiatan: data form tidak valid.")
             return # Validasi gagal atau error saat ambil data form
 
         try:
@@ -1401,30 +1227,22 @@ class KegiatanApp:
             messagebox.showinfo("✅ Sukses", f"Kegiatan '{kegiatan_baru.nama_kegiatan}' berhasil ditambahkan.", parent=self.root)
             self._tampilkan_semua_kegiatan_ui()
             self._clear_form_action()
-            self._update_status_bar(f"Kegiatan '{kegiatan_baru.nama_kegiatan}' ditambahkan.")
         except mysql.connector.Error as db_err:
             if db_err.errno == 1062 or (hasattr(db_err, 'msg') and 'ID Kegiatan sudah ada.' in db_err.msg) :
-                messagebox.showerror("❌ Error Duplikasi", f"ID Kegiatan '{kegiatan_baru.id_entitas}' sudah terdaftar atau ada error SP terkait duplikasi.", parent=self.root)
-                self._update_status_bar(f"Error duplikasi ID: {kegiatan_baru.id_entitas}.")
-                self.entries["id_kegiatan"].focus_set()
-                self.entries["id_kegiatan"].select_range(0, tk.END)
+                 messagebox.showerror("❌ Error Duplikasi", f"ID Kegiatan '{kegiatan_baru.id_entitas}' sudah terdaftar atau ada error SP terkait duplikasi.", parent=self.root)
             else:
-                messagebox.showerror("❌ Error Database", f"Gagal menambah kegiatan: {db_err}", parent=self.root)
-                self._update_status_bar(f"Error DB saat menambah: {db_err.msg[:50]}...")
+                 messagebox.showerror("❌ Error Database", f"Gagal menambah kegiatan: {db_err}", parent=self.root)
         except Exception as e:
             messagebox.showerror("❌ Kesalahan Umum", f"Terjadi kesalahan tak terduga: {e}", parent=self.root)
-            self._update_status_bar(f"Kesalahan umum: {str(e)[:50]}...")
 
 
     def _update_kegiatan(self):
         if not self.selected_kegiatan_obj_for_update:
             messagebox.showwarning("⚠️ Peringatan", "Tidak ada kegiatan yang dipilih untuk diupdate.", parent=self.root)
-            self._update_status_bar("Peringatan: Pilih kegiatan untuk diupdate.")
             return
 
         kegiatan_update = self._get_form_data_as_kegiatan_object(for_update=True)
         if not kegiatan_update:
-            self._update_status_bar("Gagal update: data form tidak valid.")
             return # Validasi gagal
 
         try:
@@ -1432,19 +1250,15 @@ class KegiatanApp:
             messagebox.showinfo("✅ Sukses", f"Kegiatan (ID: {kegiatan_update.id_entitas}) berhasil diperbarui.", parent=self.root)
             self._tampilkan_semua_kegiatan_ui()
             self._clear_form_action()
-            self._update_status_bar(f"Kegiatan ID: {kegiatan_update.id_entitas} diperbarui.")
         except mysql.connector.Error as db_err:
-            messagebox.showerror("❌ Error Database", f"Gagal memperbarui kegiatan: {db_err}", parent=self.root)
-            self._update_status_bar(f"Error DB saat update: {db_err.msg[:50]}...")
+             messagebox.showerror("❌ Error Database", f"Gagal memperbarui kegiatan: {db_err}", parent=self.root)
         except Exception as e:
             messagebox.showerror("❌ Kesalahan Umum", f"Terjadi kesalahan tak terduga saat update: {e}", parent=self.root)
-            self._update_status_bar(f"Kesalahan umum saat update: {str(e)[:50]}...")
 
     def _hapus_kegiatan(self):
         selected_items = self.tree.selection()
         if not selected_items:
             messagebox.showwarning("⚠️ Peringatan", "Pilih satu kegiatan yang ingin dihapus.", parent=self.root)
-            self._update_status_bar("Peringatan: Pilih kegiatan untuk dihapus.")
             return
         if len(selected_items) > 1: # Seharusnya tidak terjadi karena treeview single select
             messagebox.showwarning("⚠️ Peringatan", "Hanya bisa menghapus satu kegiatan dalam satu waktu.", parent=self.root)
@@ -1454,8 +1268,7 @@ class KegiatanApp:
         nama_keg_to_delete = self.tree.item(selected_items[0], "values")[1]
 
 
-        if not messagebox.askyesno("❓ Konfirmasi Hapus", f"Anda yakin ingin menghapus kegiatan '{nama_keg_to_delete}' (ID: {id_keg_to_delete})?", parent=self.root, icon='warning'):
-            self._update_status_bar(f"Penghapusan kegiatan '{nama_keg_to_delete}' dibatalkan.")
+        if not messagebox.askyesno("❓ Konfirmasi Hapus", f"Anda yakin ingin menghapus kegiatan '{nama_keg_to_delete}' (ID: {id_keg_to_delete})?", parent=self.root):
             return
 
         try:
@@ -1463,57 +1276,38 @@ class KegiatanApp:
             messagebox.showinfo("🗑️ Sukses", f"Kegiatan ID: {id_keg_to_delete} berhasil dihapus.", parent=self.root)
             self._tampilkan_semua_kegiatan_ui()
             self._clear_form_action()
-            self._update_status_bar(f"Kegiatan ID: {id_keg_to_delete} dihapus.")
         except mysql.connector.Error as err:
             messagebox.showerror("❌ Error Database", f"Gagal menghapus ID {id_keg_to_delete}: {err}", parent=self.root)
-            self._update_status_bar(f"Error DB saat hapus ID {id_keg_to_delete}: {err.msg[:50]}...")
 
 
-    def _tampilkan_semua_kegiatan_ui(self, search_term=None): # Tambah parameter search_term
+    def _tampilkan_semua_kegiatan_ui(self):
         for row in self.tree.get_children():
             self.tree.delete(row)
         try:
             # get_semua_kegiatan_obj_db mengembalikan list dict {'objek':Kegiatan, 'nama_pj':str}
-            kegiatan_data_list = self.db_manager.get_semua_kegiatan_obj_db(search_term=search_term) # Pass search_term
-            count = 0
+            kegiatan_data_list = self.db_manager.get_semua_kegiatan_obj_db()
             if kegiatan_data_list:
                 self.kegiatan_data_cache = {} # Untuk menyimpan objek kegiatan jika perlu diakses nanti
                 for data_item in kegiatan_data_list:
                     keg_obj = data_item['objek']
-                    nama_pj = data_item['nama_pj'] if data_item['nama_pj'] else "N/A" # Handle jika nama_pj None dari DB
+                    nama_pj = data_item['nama_pj']
                     self.kegiatan_data_cache[keg_obj.id_entitas] = keg_obj # Cache objeknya
                     
                     # Pastikan tanggal adalah string yang diformat
                     tanggal_display = keg_obj.tanggal
                     if isinstance(keg_obj.tanggal, datetime.date):
                         tanggal_display = keg_obj.tanggal.strftime("%d-%m-%Y")
-                    elif not keg_obj.tanggal or not str(keg_obj.tanggal).strip(): # Jika tanggal kosong atau None
-                        tanggal_display = "N/A" # Atau string kosong, sesuai preferensi
                     
                     display_values = keg_obj.to_tuple_for_display(nama_pj=nama_pj)
-                    # Pastikan tanggal di tuple juga sudah string
-                    display_values_list = list(display_values)
-                    display_values_list[2] = tanggal_display # Update tanggal di tuple
-                    self.tree.insert("", "end", values=tuple(display_values_list)) # iid tidak di-set, akan otomatis
-                    count +=1
+                    self.tree.insert("", "end", values=display_values) # iid tidak di-set, akan otomatis
             else:
-                self.kegiatan_data_cache = {}
-            
-            if search_term:
-                self._update_status_bar(f"{count} kegiatan ditemukan untuk '{search_term}'.")
-            else:
-                self._update_status_bar(f"{count} kegiatan dimuat.")
-
+                 self.kegiatan_data_cache = {}
         except mysql.connector.Error as err:
             messagebox.showerror("Error Database", f"Gagal memuat daftar kegiatan: {err}", parent=self.root)
-            self._update_status_bar(f"Error DB: {err.msg[:50]}...")
-
 
     def _open_activity_log_dialog(self):
         log_dialog = ActivityLogDialog(self.root, self.db_manager)
-        self._update_status_bar("Membuka riwayat aktivitas...")
         log_dialog.show() # Menggunakan metode show dari BaseDialog
-        self._update_status_bar("Jendela riwayat aktivitas ditutup.")
 
 # --- Titik Masuk Aplikasi ---
 def main():
@@ -1554,13 +1348,12 @@ def main():
         app = KegiatanApp(main_root, db_manager)
         app.current_user = current_user_obj # Set pengguna yang login di aplikasi utama
         print(f"Pengguna login: {current_user_obj.get_details_string()}") # Polimorfisme contoh
-        app._update_status_bar(f"Login sebagai: {current_user_obj.nama} (Role ID: {current_user_obj.role_id})")
         
         # Contoh penggunaan polimorfisme dengan objek Kegiatan
         # if app.kegiatan_data_cache:
-        #     first_keg_id = list(app.kegiatan_data_cache.keys())[0]
-        #     first_keg_obj = app.kegiatan_data_cache[first_keg_id]
-        #     print(f"Detail kegiatan pertama: {first_keg_obj.get_details_string()}")
+        #    first_keg_id = list(app.kegiatan_data_cache.keys())[0]
+        #    first_keg_obj = app.kegiatan_data_cache[first_keg_id]
+        #    print(f"Detail kegiatan pertama: {first_keg_obj.get_details_string()}")
 
         main_root.mainloop()
     else:
